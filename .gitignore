@@ -1,0 +1,23 @@
+# Assets Folder
+.idea/
+#assets/
+.idea/
+*.json
+textures/
+.zip
+
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build output
+dist/
+build/
+
+# Betriebssystem-spezifisch
+.DS_Store
+Thumbs.db
