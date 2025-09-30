@@ -7,8 +7,45 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <script id="vertexshader" type="vertex">
+        uniform float u_time;
+        varying vec3 v_position;
+        void main() {
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    <script id="fragmentshader" type="fragment">
+       #include <noise>
+       uniform vec2 u_resolution;
+       uniform vec2 u_mouse;
+       uniform vec3 u_color;
+       uniform vec3 u_color_a;
+       uniform vec3 u_color_b;
+       uniform float u_time;
+       uniform vec3 u_LightColor;
+       uniform vec3 u_DarkColor ;
+       uniform float u_Frequency ;
+       uniform float u_NoiseScale;
+       uniform float u_RingScale ;
+       uniform float u_Contrast ;
+
+       //varying vec2 v_uv;
+       varying vec3 v_position;
+
+       void main(){
+           float n = snoise(vViewPosition * u_Frequency);
+           float ring = fract(u_NoiseScale * n);
+           ring *= u_Contrast * (1.0 - ring);
+           float lerp = pow(ring, u_RingScale) + n;
+           vec3 color = mix(u_DarkColor, u_LightColor, lerp);
+
+
+           csm_DiffuseColor = vec4(color, 1.0);
+           //gl_FragColor = vec4(color, 1.0);
+       }
+    </script>
     <div id="ui">
-        <button id="mat1">Red Material</button>
+        <button id="mat1">Wood</button>
         <button id="mat2">Wireframe</button>
         <button id="mat3">Textured</button>
     </div>
@@ -17,3 +54,23 @@
 </body>
 </html>
 <!--npx vite-->
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="de">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Configuration Viewer - Three js</title>-->
+<!--    <link rel="stylesheet" href="style.css">-->
+<!--</head>-->
+<!--<body>-->
+<!--&lt;!&ndash;<div id="ui">&ndash;&gt;-->
+<!--&lt;!&ndash;    <button id="mat1">Red Material</button>&ndash;&gt;-->
+<!--&lt;!&ndash;    <button id="mat2">Wireframe</button>&ndash;&gt;-->
+<!--&lt;!&ndash;    <button id="mat3">Textured</button>&ndash;&gt;-->
+<!--&lt;!&ndash;</div>&ndash;&gt;-->
+<!--&lt;!&ndash;<canvas id="three-canvas"></canvas>&ndash;&gt;-->
+<!--<script type="module" src="js/main.js"> </script>-->
+<!--</body>-->
+<!--</html>-->
+
