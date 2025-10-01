@@ -1,2 +1,15 @@
 # ThreeJS-Demo
-First project using three js framework. 
+## First project using three js framework. 
+
+I started this project as a first step to learn three js.
+I followed the tutorial from [here](https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene).
+The code is available in the `index.html` file.
+You can run the project by opening the `index.html` file in a web browser.
+
+The result should look like this:
+![ThreeJS-Demo](./src/assets/threejs-demo.gif)
+
+I created a procedural shader using glsl and applied it to the geometry.
+A crash course on glsl can be found on this guy's github, he is the real deal: [Nik Lever](https://github.com/NikLever).
+
+I hope you find this project useful!
