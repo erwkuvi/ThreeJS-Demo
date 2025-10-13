@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import './noise.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
-
+import CustomShaderMaterial from 'three-custom-shader-material/vanilla'; // Allows to use MeshPhysicalMaterial as base
+import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js';
 
 let scene, camera, renderer, cube, controls, model;
 
@@ -20,11 +20,12 @@ const fshader = `
 `;
 
 scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
+//scene.background = new THREE.Color(0xffffff); // deactivated background for transparency settings at renderer
 camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0,0,5);
 
 renderer = new THREE.WebGLRenderer({
+    alpha: true,// transparency
     canvas: document.getElementById('three-canvas'),
     antialias: true }
 );
@@ -49,26 +50,44 @@ const loader = new GLTFLoader();
 //dracoLoader.setDecoderPath( '../assets/leg_prosthesis-gltf' );
 //loader.setDRACOLoader( dracoLoader );
 
-loader.load('../assets/leg.glb',
+loader.load(
+    '../assets/prothese-rigging2.glb',
+    //"https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb",
     function (gltf) {
-        model = gltf.scene;
+        const model = gltf.scene;
         scene.add(model);
-        console.log(model);
+        //console.log(model);
+        let skinnedMesh;
+        model.traverse((obj) => {
+            if (obj.isSkinnedMesh) skinnedMesh = obj;
+        });
+        console.log(skinnedMesh);
         // store original materials
         model.traverse((child) =>{
             if (child.isMesh){
                 child.userData.originalMaterial = child.material.clone();
             }
         });
+
+        const bones = skinnedMesh.skeleton.bones;
+        console.log("Bones indices: ", bones.map((b, i) => ({ i, name: b.name })));
     },
     function ( xhr ) {
         console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
     },
-    // called when loading has errors
+  // called when loading has errors
     function ( error ) {
         console.log( 'An error happened' );
     }
 );
+
+let ikSolver;
+//// if the model has animations, you can set up the IK solver like this
+//let bones = []
+//// "root"
+//let rootBone = new Bone();
+//rootBone.name = "RootBone";
+
 
 const uniforms = {
     u_color_a: { value: new THREE.Color(0xff0000) },
@@ -160,15 +179,6 @@ material_01.onBeforeCompile = (shader) => {
 const material_02 = new THREE.MeshPhongMaterial( { color: 0xff0000, side: THREE.DoubleSide} );
 //const material_03 = new THREE.MeshPhongMaterial( { color: 0x0000ff, side: THREE.DoubleSide} );
 
-//Cube creation
-//const geometry = new THREE.BoxGeometry( 2, 2, 2 );
-// const material = new THREE.MeshBasicMaterial( { color: 0x0000ff } );
-//const texture = new THREE.TextureLoader().load('../textures/dirty_crate_texture.jpg');
-//const material = new THREE.MeshBasicMaterial( { map: texture } );
-//model = new THREE.Mesh( geometry, material_01 );
-//scene.add(model);
-//console.log(model);
-
 //Button Events
 document.getElementById('mat1').onclick = () => applyMaterialToMeshByName(names, material_00);
 document.getElementById('mat2').onclick = () => applyMaterialToMeshByName(names, material_03);
@@ -184,7 +194,7 @@ function restoreOriginalMaterials(){
         }
     })
 }
-const names = ['defaultMaterial_10', 'defaultMaterial'];
+const names = ['ShinBoneProtectionPiece', 'QuadProtectionPiece'];
 //Apply material function
 function applyMaterial(material){
     if (!model) return;
@@ -214,6 +224,7 @@ function onWindowResize()
 
 window.addEventListener('resize', onWindowResize);
 
+controls.target.set(0, 2.5, 0);
 //Animation loop
 function animate()
 {
