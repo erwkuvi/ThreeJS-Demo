@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla'; // Allows to use MeshPhysicalMaterial as base
 import { CCDIKSolver } from 'three/addons/animation/CCDIKSolver.js';
+import {Skeleton} from "three";
 
 let scene, camera, renderer, cube, controls, model;
 
@@ -20,6 +21,8 @@ const fshader = `
 `;
 
 scene = new THREE.Scene();
+//scene.fog = new THREE.FogExp2( 0xffffff, .11 );
+
 //scene.background = new THREE.Color(0xffffff); // deactivated background for transparency settings at renderer
 camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0,0,5);
@@ -39,6 +42,9 @@ controls.update();
 //const light = new THREE.DirectionalLight(0xffffff, 1.2);
 const light = new THREE.DirectionalLight( 0x444444, 1);
 const light2 = new THREE.HemisphereLight(0xffffff, 0x444444, 2);
+//const ambientLight = new THREE.AmbientLight( 0xffffff, 8 ); // soft white light
+//scene.add( ambientLight );
+
 light.position.set(0,0,1);
 light2.position.set(0,0,-1);
 scene.add(light, light2);
@@ -50,43 +56,90 @@ const loader = new GLTFLoader();
 //dracoLoader.setDecoderPath( '../assets/leg_prosthesis-gltf' );
 //loader.setDRACOLoader( dracoLoader );
 
-loader.load(
-    '../assets/prothese-rigging2.glb',
-    //"https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb",
-    function (gltf) {
-        const model = gltf.scene;
-        scene.add(model);
-        //console.log(model);
-        let skinnedMesh;
-        model.traverse((obj) => {
-            if (obj.isSkinnedMesh) skinnedMesh = obj;
-        });
-        console.log(skinnedMesh);
-        // store original materials
-        model.traverse((child) =>{
-            if (child.isMesh){
-                child.userData.originalMaterial = child.material.clone();
-            }
-        });
+const gltf = await loader.loadAsync('../assets/prothese-rigging2.glb');
 
-        const bones = skinnedMesh.skeleton.bones;
-        console.log("Bones indices: ", bones.map((b, i) => ({ i, name: b.name })));
-    },
-    function ( xhr ) {
-        console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
-    },
-  // called when loading has errors
-    function ( error ) {
-        console.log( 'An error happened' );
+model = gltf.scene;
+scene.add(model);
+console.log("model", model);
+let skinnedMesh;
+model.traverse((obj) => { if (obj.isSkinnedMesh) skinnedMesh = obj; });
+//console.log(skinnedMesh);
+if (!skinnedMesh) console.error("No SkinnedMesh found in loaded model!");
+const bones = skinnedMesh.skeleton.bones;
+// console.log("Bones indices: ", bones.map((b, i) => ({ i, name: b.name })));
+// model.traverse((obj) => { console.log(obj.type, obj.name);});
+// store original materials
+model.traverse((child) => { if (child.isMesh){ child.userData.originalMaterial = child.material.clone();} });
+
+const iks = [
+    {
+        target: 5, // "target"
+        effector: 4, // "bone3"
+        links: [ { index: 3 }, { index: 2 }, { index: 1 } ] // "bone2", "bone1", "bone0"
     }
-);
+];
+console.log("skinnedMesh", skinnedMesh);
+let ikSolver = new CCDIKSolver(skinnedMesh, iks);
+//let ccdikhelper = new THREE.CCDIKHelper(model, iks, 0.01);
 
-let ikSolver;
+// loader.load('../assets/prothese-rigging2.glb',
+//         function (gltf)
+//         {
+//             model = gltf.scene;
+//             scene.add(model);
+//             console.log("model", model);
+//             let skinnedMesh;
+//             model.traverse((obj) => { if (obj.isSkinnedMesh) skinnedMesh = obj; });
+//             //console.log(skinnedMesh);
+//             if (!skinnedMesh)
+//             {
+//                 console.error("No SkinnedMesh found in loaded model!");
+//                 return;
+//             }
+//             const bones = skinnedMesh.skeleton.bones;
+//             model.traverse((obj) => { console.log(obj.type, obj.name);});
+//
+//             // store original materials
+//             model.traverse((child) =>
+//             {
+//                 if (child.isMesh){ child.userData.originalMaterial = child.material.clone();}
+//             });
+//             // const iks = [
+//             //     {
+//             //         target: 5, // "target"
+//             //         effector: 4, // "bone3"
+//             //         links: [ { index: 3 }, { index: 2 }, { index: 1 } ] // "bone2", "bone1", "bone0"
+//             //     }
+//             // ];
+//             //
+//             // let ikSolver;
+//             // ikSolver = new CCDIKSolver(model, iks);
+//             //console.log("Bones indices: ", bones.map((b, i) => ({ i, name: b.name })));
+//         },
+//     function ( xhr )
+//         {
+//         console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+//         },
+//     function ( error )
+//         {
+//             console.log( 'An error happened.' );
+//         }
+//     );
+
+//IK setup
+// the order of bones is important here, the first bone is the one that will be rotated first
+// the last bone in the chain should be the one that is the parent of the effector
+// indices are based on the order of bones in the model, you can log them to find out
+// in this example, we have a chain of 3 bones, "bone0", "bone1", "bone2" and an effector "bone3"
+// the target is a separate object that the effector will try to reach
+// in this case, the target is "target", which is a child of the root of the model
+// bone0 -> bone1 -> bone2 -> bone3 (effector) -> target
+// indices: 0 -> 1 -> 2 -> 3 (effector) -> 5 (target)
+// the IK solver will try to move bone2, bone1 and bone0 to reach the target with bone3
+// you can adjust the number of iterations and the min/max angle for more realistic movements
+// minAngle and maxAngle are in radians
+
 //// if the model has animations, you can set up the IK solver like this
-//let bones = []
-//// "root"
-//let rootBone = new Bone();
-//rootBone.name = "RootBone";
 
 
 const uniforms = {
