@@ -75,7 +75,9 @@ const targetPosition = skinnedMeshes.FootPiece.skeleton.bones[3].getWorldPositio
 //
 //   bonequad (0)
 //     ├── boneshin (1)  <- effector
-//     └── bonetarget (3) <- target
+//     │    └── bonefoot (2)
+//   bonetarget (3) <- target
+
 //IK Setup
 const iks = [
     {
@@ -97,8 +99,9 @@ const iks = [
             ]
     }
 ];
+
 const ikSolver = new CCDIKSolver(skinnedMeshes.FootPiece, iks);
-let helper = ikSolver.createHelper(0.05);
+// let helper = ikSolver.createHelper(0.05);
 // scene.add(helper);
 
 //GUI
@@ -274,30 +277,6 @@ function applyMaterialToMeshByName(meshNames, material) {
     })
 }
 
-// Update IK and target position if moved
-// function updateTargetAndIK() {
-//     if (!targetChanged) return; // Only run when target moved
-//     targetChanged = false;
-//
-//     const targetObj = model.getObjectByName("bonetarget");
-//     if (!targetObj) return;
-//
-//     // Get new world position
-//     const targetPos = targetObj.getWorldPosition(new THREE.Vector3());
-//
-//     // Update IK target (convert to local space if necessary)
-//     const localTarget = skinnedMeshes.QuadPiece.worldToLocal(targetPos.clone());
-//     skinnedMeshes.QuadPiece.skeleton.bones[iks[0].target].position.copy(localTarget);
-//
-//     // Run IK
-//     ikSolver.update();
-//
-//     // (Optional) update helper visualization
-//     if (helper) helper.updateMatrixWorld(true);
-//
-//     lastTargetPos.copy(targetPos);
-// }
-
 function updateIK() {
     if ( IKSolver ) IKSolver.update();
     // scene.traverse( function ( object ) {
@@ -321,9 +300,6 @@ function animate()
     requestAnimationFrame(animate);
     controls.update();
 
-    // updateTargetAndIK();
-
-    // if (conf.ik_solver)
     ikSolver.update();
     renderer.render(scene, camera);
 }
