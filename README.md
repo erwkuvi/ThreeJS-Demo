@@ -62,8 +62,8 @@ A crash course on glsl can be found on this guy's github, he is the real deal: [
 
 ### Roadmap
 
-- [] Add dat.GUI for real-time shader parameter tuning.
-- [] Implement post-processing effects (Bloom/DOF).
-- [] Refactor into a modular ES6 class structure.
+- [ ] Add dat.GUI for real-time shader parameter tuning.
+- [ ] Implement post-processing effects (Bloom/DOF).
+- [ ] Refactor into a modular ES6 class structure.
 
 
